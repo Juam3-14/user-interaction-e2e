@@ -4,7 +4,6 @@ from pathlib import Path
 
 class StoriesManager:
     
-    
     def __init__(self):
         self.events_file_path = Path("resources/events_log.json")
         self.max_interval_for_event_group = timedelta(minutes=5)
