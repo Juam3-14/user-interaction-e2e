@@ -1,0 +1,4 @@
+venv
+*.pyc
+events_log.json
+user_stories.json
