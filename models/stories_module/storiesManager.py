@@ -6,7 +6,7 @@ class StoriesManager:
     
     
     def __init__(self):
-        self.events_file_path = Path("resources\events_log.json")
+        self.events_file_path = Path("resources/events_log.json")
         self.max_interval_for_event_group = timedelta(minutes=5)
         self.user_stories_file_path = Path("resources/user_stories.json")
         
@@ -18,6 +18,7 @@ class StoriesManager:
 
     def parse_timestamp(self, timestamp):
         return datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    
     
     
     def group_events_into_user_stories(self):
