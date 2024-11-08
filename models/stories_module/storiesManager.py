@@ -1,84 +1,47 @@
 import json
+import uuid
+
 from datetime import datetime, timedelta
 from pathlib import Path
+from collections import defaultdict
+from typing import List
+
+from models.events_module.event import Event
+from models.stories_module.userStory import UserStory
 
 class StoriesManager:
     
     def __init__(self):
-        self.events_file_path = Path("resources/events_log.json")
-        self.max_interval_for_event_group = timedelta(minutes=5)
         self.user_stories_file_path = Path("resources/user_stories.json")
+        self.stories_by_session = defaultdict(list)
         
-        if self.events_file_path.exists():
-            with open(self.events_file_path, "r") as file:
-                self.events = json.load(file)
-        else: 
-            self.events = None
+    def process_event(self, event: Event):
+        session_id = event.properties.session_id
+        timestamp = datetime.fromisoformat(event.timestamp)
+        if not self.stories_by_session[session_id] or self.is_new_story(event, self.stories_by_session[session_id][-1]):
+            new_story = UserStory(
+                id=str(uuid.uuid4()),
+                session_id=session_id,
+                startTimestamp=timestamp,
+                endTimestamp=timestamp
+            )
+            self.stories_by_session[session_id].append(new_story)
+        current_story: UserStory = self.stories_by_session[session_id][-1]
+        current_story.add_event(event)
 
-    def parse_timestamp(self, timestamp):
-        return datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    def is_new_story(self, event: Event, last_story: UserStory) -> bool:
+            # Lógica para decidir si este evento comienza una nueva historia
+            # Ejemplo: agrupa en US fijándose en URL o tiempo desde el último evento (2 minutos)
+            max_time_gap = timedelta(minutes=2)
+            return (
+                datetime.fromisoformat(event.timestamp) - last_story.endTimestamp > max_time_gap
+                or event.properties.current_url != last_story.actions[-1].current_url
+            )
     
+    def get_user_stories(self) -> List[UserStory]:
+        return [story for stories in self.stories_by_session.values() for story in stories]
     
-    
-    def group_events_into_user_stories(self):
-        user_stories = []
-        current_story = {
-            "id": "",
-            "title": "",
-            "startTimestamp": "",
-            "endTimestamp": "",
-            "initialState": {},
-            "actions": [],
-            "networkRequests": [],
-            "finalState": {}
-        }
-        last_event_time = None
-        if self.events:
-            for event in self.events:
-                event_time = self.parse_timestamp(event["timestamp"])
-                
-                if not last_event_time or (event_time - last_event_time > self.max_interval_for_event_group):
-                    if current_story["actions"]:
-                        current_story["endTimestamp"] = last_event_time.isoformat()
-                        user_stories.append(current_story)
-                        
-                current_story = {
-                    "id": f"us-{len(user_stories) + 1}",
-                    "title": "User Story Title", # => Modify depending on event's nature
-                    "startTimestamp": event_time.isoformat(),
-                    "endTimestamp": "",
-                    "initialState": {"url": event.get("url")},
-                    "actions": [],
-                    "networkRequests": [],
-                    "finalState": {}
-                }
-                
-                if event["properties"]["eventType"] in ["input", "click", "navigation"]:
-                    current_story["actions"].append(
-                        {
-                            "type": event["properties"]["eventType"],
-                            "target": event["properties"]["distinct_id"],
-                            "path": event["properties"]["$pathname"]
-                        }
-                    )
-                elif event["properties"]["eventType"] == "network":
-                    current_story["networkRequests"].append(
-                        {
-                            "url": event["properties"]["eventType"],
-                            "method": event["properties"]["distinct_id"],
-                            "status": event["properties"]["$pathname"],
-                        }
-                    )
-                    
-                current_story["finalState"]["url"] = event["properties"]["$current_url"]
-                current_story["finalState"]["displayName"] = event["properties"]["elementText"] 
-                last_event_time = event_time
-                
-            if current_story["actions"]:
-                current_story["endTimestamp"] = last_event_time.isoformat()
-                user_stories.append(current_story)
-                
-            with open(self.user_stories_file_path, "w") as outfile:
-                json.dump(user_stories, outfile, indent=2)
-                
-        return user_stories
+    def save_user_stories_to_file(self):
+        user_stories = [story.dict() for stories in self.stories_by_session.values() for story in stories]
+        with open(self.user_stories_file_path, "w") as file:
+            json.dump(user_stories, file, indent=4, default=str)

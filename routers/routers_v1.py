@@ -20,7 +20,13 @@ async def method(request: Request, eventsRequest: EventsRequest):
 @router.get("/stories")
 async def method(request: Request):
     storiesManager = StoriesManager()
-    user_stories = storiesManager.group_events_into_user_stories()
+    eventsManager = EventsManager()
+    
+    for event in eventsManager.get_events_from_file():
+        storiesManager.process_event(event) # => Process every event indepndently one by one
+        
+    storiesManager.save_user_stories_to_file() 
+    user_stories = storiesManager.get_user_stories()
     return {"status": "success", "stories_count": len(user_stories)}
 
 @router.get("/tests")
