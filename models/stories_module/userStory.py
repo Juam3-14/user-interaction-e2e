@@ -33,8 +33,6 @@ class US_Step(BaseModel):
             href=event.properties.elementAttributes.href if event.properties.elementAttributes else None
         )
 
-
-
 class UserStory(BaseModel):
     id: str
     session_id: str
@@ -50,4 +48,5 @@ class UserStory(BaseModel):
     def title(self) -> str:
         return f"User story for session {self.session_id}"
     
-    
+    def get_first_action(self):
+        return self.actions[0]

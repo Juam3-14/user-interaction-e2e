@@ -6,11 +6,12 @@ from pathlib import Path
 from collections import defaultdict
 from typing import List
 
+from pydantic import TypeAdapter
+
 from models.events_module.event import Event
 from models.stories_module.userStory import UserStory
 
 class StoriesManager:
-    
     def __init__(self):
         self.user_stories_file_path = Path("resources/user_stories.json")
         self.stories_by_session = defaultdict(list)
@@ -45,3 +46,13 @@ class StoriesManager:
         user_stories = [story.dict() for stories in self.stories_by_session.values() for story in stories]
         with open(self.user_stories_file_path, "w") as file:
             json.dump(user_stories, file, indent=4, default=str)
+            
+    def get_stories_from_file(self):
+        """
+        The function reads user_stories from a file and yields each event.
+        """
+        if self.user_stories_file_path.exists():
+            with open(self.user_stories_file_path, "r") as file:
+                stories = TypeAdapter(List[UserStory]).validate_python(json.load(file))
+            for story in stories:
+                yield story
