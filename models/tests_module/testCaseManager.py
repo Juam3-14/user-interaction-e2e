@@ -1,8 +1,6 @@
-import json
-from pathlib import Path
-from playwright.async_api import async_playwright
+from models.stories_module.userStory import UserStory
 
-from models.stories_module.userStory import UserStory, US_Step
+# Class for generating the python test case from a UserStory and stores it into a file.
 
 class TestCaseManager:
     def __init__(self):
