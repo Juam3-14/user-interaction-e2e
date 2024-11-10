@@ -58,7 +58,7 @@ class StoriesManager:
         with open(self.user_stories_file_path, "w") as file:
             json.dump(user_stories, file, indent=4, default=str)
             
-    def get_stories_from_file(self, session_id: str = None):
+    def get_stories_from_file(self, ):
         """
         Function used as a generator of user_stories from a file. Allows to filter by session_id if wanted.
         """
@@ -66,10 +66,4 @@ class StoriesManager:
             with open(self.user_stories_file_path, "r") as file:
                 stories = TypeAdapter(List[UserStory]).validate_python(json.load(file))
             for story in stories:
-                if not session_id:
                     yield story
-                elif session_id == story.session_id:
-                    yield story
-                else:
-                    pass
-                    

@@ -1,7 +1,6 @@
 from models.stories_module.userStory import UserStory
 
 # Class for generating the python test case from a UserStory and stores it into a file.
-
 class TestCaseManager:
     def __init__(self):
         self.test_cases_folder = "tests"
